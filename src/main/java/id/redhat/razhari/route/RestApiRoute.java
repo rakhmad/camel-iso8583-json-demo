@@ -5,7 +5,6 @@ import id.redhat.razhari.model.*;
 import id.redhat.razhari.store.TransactionStore;
 import id.redhat.razhari.util.StanGenerator;
 import org.apache.camel.Exchange;
-import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.jackson.JacksonDataFormat;
 import org.apache.camel.model.rest.RestBindingMode;
@@ -29,7 +28,7 @@ public class RestApiRoute extends RouteBuilder {
 
     @Inject TransactionStore store;
     @Inject StanGenerator stanGenerator;
-    @Inject ProducerTemplate producerTemplate;
+    @Inject IsoDispatcher isoDispatcher;
     @Inject ObjectMapper objectMapper;
 
     @Override
@@ -71,7 +70,7 @@ public class RestApiRoute extends RouteBuilder {
 
                 store.save(state);
                 // Fire-and-forget: ISO8583SendRoute picks this up and contacts the switch
-                producerTemplate.asyncSendBody("direct:send-iso8583", state);
+                isoDispatcher.dispatch(state);
 
                 exchange.getMessage().setBody(Map.of("transactionId", state.id));
                 exchange.getMessage().setHeader(Exchange.HTTP_RESPONSE_CODE, 202);
@@ -96,7 +95,7 @@ public class RestApiRoute extends RouteBuilder {
                 }
             })
             .choice()
-                .when(exchangeProperty("skipMarshal").isNull())
+                .when(exchangeProperty("skipMarshal").isNotEqualTo(true))
                     .marshal(json())
             .end();
 
@@ -121,7 +120,7 @@ public class RestApiRoute extends RouteBuilder {
                 }
             })
             .choice()
-                .when(exchangeProperty("skipMarshal").isNull())
+                .when(exchangeProperty("skipMarshal").isNotEqualTo(true))
                     .marshal(json())
             .end();
 

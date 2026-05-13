@@ -2,6 +2,7 @@ package id.redhat.razhari.rest;
 
 import id.redhat.razhari.model.TransactionState;
 import id.redhat.razhari.model.TransactionStatus;
+import id.redhat.razhari.route.IsoDispatcher;
 import id.redhat.razhari.store.TransactionStore;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
@@ -22,6 +23,9 @@ class TransactionRestRouteTest {
 
     @InjectMock
     TransactionStore store;
+
+    @InjectMock
+    IsoDispatcher isoDispatcher;
 
     @Test
     void POST_returns_202_with_transaction_id() {
