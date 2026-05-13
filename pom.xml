@@ -11,9 +11,17 @@
   <properties>
     <maven.compiler.release>21</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <quarkus.platform.group-id>com.redhat.quarkus.platform</quarkus.platform.group-id>
-    <quarkus.platform.version>3.15.3.SP1</quarkus.platform.version>
-    <j8583.version>1.18.0</j8583.version>
+    <!--
+      Using upstream Quarkus platform (Maven Central) for local development.
+      To switch to Red Hat Build of Quarkus (enterprise support), change to:
+        quarkus.platform.group-id = com.redhat.quarkus.platform
+        quarkus.platform.version  = <rhbq-version e.g. 3.15.x.redhat-NNNNN>
+      and add the Red Hat GA repository (https://maven.repository.redhat.com/ga/)
+      to your ~/.m2/settings.xml or the repositories section below.
+    -->
+    <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
+    <quarkus.platform.version>3.15.2</quarkus.platform.version>
+    <j8583.version>1.23.16</j8583.version>
   </properties>
 
   <dependencyManagement>
@@ -66,9 +74,10 @@
       <artifactId>quarkus-arc</artifactId>
     </dependency>
 
-    <!-- ISO 8583 -->
+    <!-- ISO 8583 (com.solab:j8583 was never published to Maven Central;
+         this is the maintained fork with the same com.solab.iso8583.* package names) -->
     <dependency>
-      <groupId>com.solab</groupId>
+      <groupId>io.github.thibaudledent.j8583</groupId>
       <artifactId>j8583</artifactId>
       <version>${j8583.version}</version>
     </dependency>
