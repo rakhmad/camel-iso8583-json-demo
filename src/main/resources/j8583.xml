@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE j8583-config PUBLIC "-//J8583//DTD CONFIG 1.0//EN"
+    "http://j8583.sourceforge.net/j8583.dtd">
+<j8583-config>
+
+    <!-- No length header in j8583 — handled by our 2-byte Netty codec -->
+    <header length="0"/>
+
+    <!-- Authorization Request 0200 -->
+    <parse type="0200">
+        <field num="2"  type="LLVAR"/>
+        <field num="3"  type="NUMERIC" length="6"/>
+        <field num="4"  type="NUMERIC" length="12"/>
+        <field num="7"  type="DATE10"/>
+        <field num="11" type="NUMERIC" length="6"/>
+        <field num="12" type="TIME"/>
+        <field num="13" type="DATE4"/>
+        <field num="41" type="ALPHA"   length="8"/>
+        <field num="42" type="ALPHA"   length="15"/>
+        <field num="49" type="NUMERIC" length="3"/>
+    </parse>
+
+    <!-- Authorization Response 0210 -->
+    <parse type="0210">
+        <field num="2"  type="LLVAR"/>
+        <field num="3"  type="NUMERIC" length="6"/>
+        <field num="4"  type="NUMERIC" length="12"/>
+        <field num="7"  type="DATE10"/>
+        <field num="11" type="NUMERIC" length="6"/>
+        <field num="37" type="ALPHA"   length="12"/>
+        <field num="38" type="ALPHA"   length="6"/>
+        <field num="39" type="ALPHA"   length="2"/>
+        <field num="41" type="ALPHA"   length="8"/>
+        <field num="42" type="ALPHA"   length="15"/>
+        <field num="49" type="NUMERIC" length="3"/>
+    </parse>
+
+    <!-- Reversal / Advice 0400 -->
+    <parse type="0400">
+        <field num="2"  type="LLVAR"/>
+        <field num="4"  type="NUMERIC" length="12"/>
+        <field num="11" type="NUMERIC" length="6"/>
+        <field num="39" type="ALPHA"   length="2"/>
+    </parse>
+
+    <!-- Template defaults for 0200 -->
+    <template type="0200">
+        <field num="3" type="NUMERIC" length="6" value="000000"/>
+    </template>
+
+</j8583-config>
