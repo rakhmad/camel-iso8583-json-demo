@@ -9,7 +9,7 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class ISO8583CodecTest {
 
@@ -31,11 +31,11 @@ class ISO8583CodecTest {
         ByteBuf buf = ch.readOutbound();
 
         int length = buf.readUnsignedShort();
-        assertEquals(length, buf.readableBytes());
+        assertThat(buf.readableBytes()).isEqualTo(length);
     }
 
     @Test
-    void decoderReconstructsIsoMessage() throws Exception {
+    void decoderReconstructsISOMessage() throws Exception {
         IsoMessage original = factory.newMessage(0x0200);
         original.setValue(2, "4111111111111111", IsoType.LLVAR, 0);
         original.setValue(11, "000042", IsoType.NUMERIC, 6);
@@ -50,9 +50,9 @@ class ISO8583CodecTest {
         decoder.writeInbound(encoded);
         IsoMessage decoded = decoder.readInbound();
 
-        assertNotNull(decoded);
-        assertEquals(0x0200, decoded.getType());
-        assertEquals("000042", decoded.getField(11).toString());
+        assertThat(decoded).isNotNull();
+        assertThat(decoded.getType()).isEqualTo(0x0200);
+        assertThat(decoded.getField(11).toString()).isEqualTo("000042");
     }
 
     @Test
@@ -67,10 +67,10 @@ class ISO8583CodecTest {
         // Send only first byte — decoder must not produce output yet
         EmbeddedChannel decoder = new EmbeddedChannel(new ISO8583Decoder(factory));
         decoder.writeInbound(full.readSlice(1).retain());
-        assertNull(decoder.readInbound());
+        assertThat((Object) decoder.readInbound()).isNull();
 
         // Send the rest — now it should decode
         decoder.writeInbound(full);
-        assertNotNull(decoder.readInbound());
+        assertThat((Object) decoder.readInbound()).isNotNull();
     }
 }
