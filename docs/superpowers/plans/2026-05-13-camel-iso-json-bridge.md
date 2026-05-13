@@ -26,7 +26,7 @@ src/main/java/id/redhat/razhari/
 │   ├── ISO8583Decoder.java        # ByteToMessageDecoder: 2-byte length prefix → ISOMessage
 │   └── ISO8583Encoder.java        # MessageToByteEncoder: ISOMessage → 2-byte length + bytes
 ├── config/
-│   ├── MessageFactoryProducer.java    # @Produces MessageFactory<ISOMessage> from j8583.xml
+│   ├── MessageFactoryProducer.java    # @Produces MessageFactory<IsoMessage> from j8583.xml
 │   ├── ISO8583ServerInitializer.java  # ServerInitializerFactory for Netty TCP server
 │   └── ISO8583ClientInitializer.java  # ClientInitializerFactory for Netty TCP client
 ├── util/
@@ -639,7 +639,7 @@ No separate unit test — the codec tests in Task 6 validate that the factory pr
 ```java
 package id.redhat.razhari.config;
 
-import com.solab.iso8583.ISOMessage;
+import com.solab.iso8583.IsoMessage;
 import com.solab.iso8583.MessageFactory;
 import com.solab.iso8583.parse.ConfigParser;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -652,8 +652,8 @@ public class MessageFactoryProducer {
 
     @Produces
     @ApplicationScoped
-    public MessageFactory<ISOMessage> messageFactory() throws IOException {
-        MessageFactory<ISOMessage> factory = new MessageFactory<>();
+    public MessageFactory<IsoMessage> messageFactory() throws IOException {
+        MessageFactory<IsoMessage> factory = new MessageFactory<>();
         factory.setUseBinaryMessages(false);
         factory.setCharacterEncoding("UTF-8");
         factory.setAssignDate(true);
@@ -695,7 +695,7 @@ git commit -m "feat: configure j8583 MessageFactory with field definitions for 0
 package id.redhat.razhari.codec;
 
 import id.redhat.razhari.config.MessageFactoryProducer;
-import com.solab.iso8583.ISOMessage;
+import com.solab.iso8583.IsoMessage;
 import com.solab.iso8583.IsoType;
 import com.solab.iso8583.MessageFactory;
 import io.netty.buffer.ByteBuf;
@@ -707,7 +707,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class ISO8583CodecTest {
 
-    static MessageFactory<ISOMessage> factory;
+    static MessageFactory<IsoMessage> factory;
 
     @BeforeAll
     static void init() throws Exception {
@@ -716,9 +716,9 @@ class ISO8583CodecTest {
 
     @Test
     void encoderWritesTwoByteLengthPrefixThenPayload() throws Exception {
-        ISOMessage msg = factory.newMessage(0x0200);
-        msg.setValue(2, "4111111111111111", null, IsoType.LLVAR, 0);
-        msg.setValue(11, "000001", null, IsoType.NUMERIC, 6);
+        IsoMessage msg = factory.newMessage(0x0200);
+        msg.setValue(2, "4111111111111111", IsoType.LLVAR, 0);
+        msg.setValue(11, "000001", IsoType.NUMERIC, 6);
 
         EmbeddedChannel ch = new EmbeddedChannel(new ISO8583Encoder());
         ch.writeOutbound(msg);
@@ -730,9 +730,9 @@ class ISO8583CodecTest {
 
     @Test
     void decoderReconstructsISOMessage() throws Exception {
-        ISOMessage original = factory.newMessage(0x0200);
-        original.setValue(2, "4111111111111111", null, IsoType.LLVAR, 0);
-        original.setValue(11, "000042", null, IsoType.NUMERIC, 6);
+        IsoMessage original = factory.newMessage(0x0200);
+        original.setValue(2, "4111111111111111", IsoType.LLVAR, 0);
+        original.setValue(11, "000042", IsoType.NUMERIC, 6);
 
         // Encode first
         EmbeddedChannel encoder = new EmbeddedChannel(new ISO8583Encoder());
@@ -742,17 +742,17 @@ class ISO8583CodecTest {
         // Decode
         EmbeddedChannel decoder = new EmbeddedChannel(new ISO8583Decoder(factory));
         decoder.writeInbound(encoded);
-        ISOMessage decoded = decoder.readInbound();
+        IsoMessage decoded = decoder.readInbound();
 
         assertThat(decoded).isNotNull();
-        assertThat(decoded.getMti()).isEqualTo(0x0200);
+        assertThat(decoded.getType()).isEqualTo(0x0200);
         assertThat(decoded.getField(11).toString()).isEqualTo("000042");
     }
 
     @Test
     void decoderWaitsForFullFrame() throws Exception {
-        ISOMessage original = factory.newMessage(0x0200);
-        original.setValue(11, "000001", null, IsoType.NUMERIC, 6);
+        IsoMessage original = factory.newMessage(0x0200);
+        original.setValue(11, "000001", IsoType.NUMERIC, 6);
 
         EmbeddedChannel encoder = new EmbeddedChannel(new ISO8583Encoder());
         encoder.writeOutbound(original);
@@ -783,15 +783,15 @@ Expected: FAIL — `ISO8583Decoder` and `ISO8583Encoder` do not exist
 ```java
 package id.redhat.razhari.codec;
 
-import com.solab.iso8583.ISOMessage;
+import com.solab.iso8583.IsoMessage;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 
-public class ISO8583Encoder extends MessageToByteEncoder<ISOMessage> {
+public class ISO8583Encoder extends MessageToByteEncoder<IsoMessage> {
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, ISOMessage msg, ByteBuf out) throws Exception {
+    protected void encode(ChannelHandlerContext ctx, IsoMessage msg, ByteBuf out) throws Exception {
         byte[] payload = msg.writeData();
         out.writeShort(payload.length);
         out.writeBytes(payload);
@@ -804,7 +804,7 @@ public class ISO8583Encoder extends MessageToByteEncoder<ISOMessage> {
 ```java
 package id.redhat.razhari.codec;
 
-import com.solab.iso8583.ISOMessage;
+import com.solab.iso8583.IsoMessage;
 import com.solab.iso8583.MessageFactory;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -814,9 +814,9 @@ import java.util.List;
 
 public class ISO8583Decoder extends ByteToMessageDecoder {
 
-    private final MessageFactory<ISOMessage> factory;
+    private final MessageFactory<IsoMessage> factory;
 
-    public ISO8583Decoder(MessageFactory<ISOMessage> factory) {
+    public ISO8583Decoder(MessageFactory<IsoMessage> factory) {
         this.factory = factory;
     }
 
@@ -866,7 +866,7 @@ package id.redhat.razhari.config;
 
 import id.redhat.razhari.codec.ISO8583Decoder;
 import id.redhat.razhari.codec.ISO8583Encoder;
-import com.solab.iso8583.ISOMessage;
+import com.solab.iso8583.IsoMessage;
 import com.solab.iso8583.MessageFactory;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
@@ -881,7 +881,7 @@ import org.apache.camel.component.netty.NettyConsumer;
 public class ISO8583ServerInitializer extends ServerInitializerFactory {
 
     @Inject
-    MessageFactory<ISOMessage> messageFactory;
+    MessageFactory<IsoMessage> messageFactory;
 
     @Override
     protected void initChannel(Channel ch) {
@@ -904,7 +904,7 @@ package id.redhat.razhari.config;
 
 import id.redhat.razhari.codec.ISO8583Decoder;
 import id.redhat.razhari.codec.ISO8583Encoder;
-import com.solab.iso8583.ISOMessage;
+import com.solab.iso8583.IsoMessage;
 import com.solab.iso8583.MessageFactory;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
@@ -919,7 +919,7 @@ import org.apache.camel.component.netty.NettyProducer;
 public class ISO8583ClientInitializer extends ClientInitializerFactory {
 
     @Inject
-    MessageFactory<ISOMessage> messageFactory;
+    MessageFactory<IsoMessage> messageFactory;
 
     @Override
     protected void initChannel(Channel ch) {
@@ -967,7 +967,7 @@ import id.redhat.razhari.config.MessageFactoryProducer;
 import id.redhat.razhari.model.TransactionRequest;
 import id.redhat.razhari.model.TransactionState;
 import id.redhat.razhari.model.TransactionStatus;
-import com.solab.iso8583.ISOMessage;
+import com.solab.iso8583.IsoMessage;
 import com.solab.iso8583.MessageFactory;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultCamelContext;
@@ -981,7 +981,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class JsonToIsoProcessorTest {
 
-    static MessageFactory<ISOMessage> factory;
+    static MessageFactory<IsoMessage> factory;
     static JsonToIsoProcessor processor;
 
     @BeforeAll
@@ -998,9 +998,9 @@ class JsonToIsoProcessorTest {
 
         processor.process(exchange);
 
-        ISOMessage msg = exchange.getIn().getBody(ISOMessage.class);
+        IsoMessage msg = exchange.getIn().getBody(IsoMessage.class);
         assertThat(msg).isNotNull();
-        assertThat(msg.getMti()).isEqualTo(0x0200);
+        assertThat(msg.getType()).isEqualTo(0x0200);
         assertThat(msg.getField(2).toString()).isEqualTo("4111111111111111");
         assertThat(msg.getField(11).toString()).isEqualTo("000001");
         assertThat(msg.getField(49).toString()).isEqualTo("840");
@@ -1015,7 +1015,7 @@ class JsonToIsoProcessorTest {
         exchange.getIn().setBody(state);
         processor.process(exchange);
 
-        ISOMessage msg = exchange.getIn().getBody(ISOMessage.class);
+        IsoMessage msg = exchange.getIn().getBody(IsoMessage.class);
         assertThat(msg.getField(11).toString()).isEqualTo("000099");
     }
 
@@ -1026,7 +1026,7 @@ class JsonToIsoProcessorTest {
         exchange.getIn().setBody(state);
         processor.process(exchange);
 
-        ISOMessage msg = exchange.getIn().getBody(ISOMessage.class);
+        IsoMessage msg = exchange.getIn().getBody(IsoMessage.class);
         assertThat(msg.getField(4).toString()).isEqualTo("000000000001");
     }
 
@@ -1067,7 +1067,7 @@ package id.redhat.razhari.processor;
 
 import id.redhat.razhari.model.TransactionRequest;
 import id.redhat.razhari.model.TransactionState;
-import com.solab.iso8583.ISOMessage;
+import com.solab.iso8583.IsoMessage;
 import com.solab.iso8583.IsoType;
 import com.solab.iso8583.MessageFactory;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -1080,10 +1080,10 @@ import org.apache.camel.Processor;
 @Named("jsonToIsoProcessor")
 public class JsonToIsoProcessor implements Processor {
 
-    private final MessageFactory<ISOMessage> factory;
+    private final MessageFactory<IsoMessage> factory;
 
     @Inject
-    public JsonToIsoProcessor(MessageFactory<ISOMessage> factory) {
+    public JsonToIsoProcessor(MessageFactory<IsoMessage> factory) {
         this.factory = factory;
     }
 
@@ -1094,7 +1094,7 @@ public class JsonToIsoProcessor implements Processor {
 
         // Parse MTI string "0200" as hex integer: 0x0200 = 512
         int mti = Integer.parseInt(req.mti, 16);
-        ISOMessage msg = factory.newMessage(mti);
+        IsoMessage msg = factory.newMessage(mti);
 
         msg.setValue(2,  req.pan,                              null, IsoType.LLVAR,   0);
         msg.setValue(4,  String.format("%012d", req.amount),   null, IsoType.NUMERIC, 12);
@@ -1141,7 +1141,7 @@ import id.redhat.razhari.config.MessageFactoryProducer;
 import id.redhat.razhari.model.TransactionState;
 import id.redhat.razhari.model.TransactionStatus;
 import id.redhat.razhari.store.InMemoryTransactionStore;
-import com.solab.iso8583.ISOMessage;
+import com.solab.iso8583.IsoMessage;
 import com.solab.iso8583.IsoType;
 import com.solab.iso8583.MessageFactory;
 import org.apache.camel.Exchange;
@@ -1157,7 +1157,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class IsoToJsonProcessorTest {
 
-    static MessageFactory<ISOMessage> factory;
+    static MessageFactory<IsoMessage> factory;
     InMemoryTransactionStore store;
     IsoToJsonProcessor processor;
 
@@ -1182,9 +1182,9 @@ class IsoToJsonProcessorTest {
         existing.updatedAt = Instant.now();
         store.save(existing);
 
-        ISOMessage response = factory.newMessage(0x0210);
-        response.setValue(11, "000042", null, IsoType.NUMERIC, 6);
-        response.setValue(38, "AUTH01", null, IsoType.ALPHA, 6);
+        IsoMessage response = factory.newMessage(0x0210);
+        response.setValue(11, "000042", IsoType.NUMERIC, 6);
+        response.setValue(38, "AUTH01", IsoType.ALPHA, 6);
         response.setValue(39, "00",     null, IsoType.ALPHA, 2);
 
         Exchange exchange = new DefaultExchange(new DefaultCamelContext());
@@ -1199,8 +1199,8 @@ class IsoToJsonProcessorTest {
 
     @Test
     void createsNewReceivedStateForUnsolicitedMessage() throws Exception {
-        ISOMessage unsolicited = factory.newMessage(0x0400);
-        unsolicited.setValue(11, "000099", null, IsoType.NUMERIC, 6);
+        IsoMessage unsolicited = factory.newMessage(0x0400);
+        unsolicited.setValue(11, "000099", IsoType.NUMERIC, 6);
         unsolicited.setValue(39, "00",     null, IsoType.ALPHA, 2);
 
         Exchange exchange = new DefaultExchange(new DefaultCamelContext());
@@ -1224,8 +1224,8 @@ class IsoToJsonProcessorTest {
         store.save(s1);
         store.save(s2);
 
-        ISOMessage response = factory.newMessage(0x0210);
-        response.setValue(11, "000001", null, IsoType.NUMERIC, 6);
+        IsoMessage response = factory.newMessage(0x0210);
+        response.setValue(11, "000001", IsoType.NUMERIC, 6);
         response.setValue(39, "00",     null, IsoType.ALPHA, 2);
 
         Exchange exchange = new DefaultExchange(new DefaultCamelContext());
@@ -1253,7 +1253,7 @@ package id.redhat.razhari.processor;
 import id.redhat.razhari.model.TransactionState;
 import id.redhat.razhari.model.TransactionStatus;
 import id.redhat.razhari.store.TransactionStore;
-import com.solab.iso8583.ISOMessage;
+import com.solab.iso8583.IsoMessage;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
@@ -1279,7 +1279,7 @@ public class IsoToJsonProcessor implements Processor {
 
     @Override
     public void process(Exchange exchange) throws Exception {
-        ISOMessage msg = exchange.getIn().getBody(ISOMessage.class);
+        IsoMessage msg = exchange.getIn().getBody(IsoMessage.class);
         String stan = msg.getField(11) != null ? msg.getField(11).toString() : null;
 
         Optional<TransactionState> existing = stan != null ? store.findByStan(stan) : Optional.empty();
@@ -1302,9 +1302,9 @@ public class IsoToJsonProcessor implements Processor {
         }
     }
 
-    private Map<String, String> extractFields(ISOMessage msg) {
+    private Map<String, String> extractFields(IsoMessage msg) {
         Map<String, String> result = new HashMap<>();
-        result.put("mti", String.format("%04x", msg.getMti()).toUpperCase());
+        result.put("mti", String.format("%04x", msg.getType()).toUpperCase());
         if (msg.getField(11) != null) result.put("stan",            msg.getField(11).toString());
         if (msg.getField(37) != null) result.put("retrievalRef",    msg.getField(37).toString());
         if (msg.getField(38) != null) result.put("authCode",        msg.getField(38).toString());
@@ -1690,7 +1690,7 @@ package id.redhat.razhari.route;
 
 import id.redhat.razhari.config.MessageFactoryProducer;
 import id.redhat.razhari.model.TransactionStatus;
-import com.solab.iso8583.ISOMessage;
+import com.solab.iso8583.IsoMessage;
 import com.solab.iso8583.IsoType;
 import com.solab.iso8583.MessageFactory;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -1701,7 +1701,7 @@ import org.apache.camel.builder.RouteBuilder;
 public class ISO8583ServerRoute extends RouteBuilder {
 
     @Inject
-    MessageFactory<ISOMessage> messageFactory;
+    MessageFactory<IsoMessage> messageFactory;
 
     @Override
     public void configure() {
@@ -1716,19 +1716,19 @@ public class ISO8583ServerRoute extends RouteBuilder {
             .process(exchange -> {
                 // Store original message before processor replaces body
                 exchange.setProperty("incomingMsg",
-                    exchange.getIn().getBody(ISOMessage.class));
+                    exchange.getIn().getBody(IsoMessage.class));
             })
             .process("isoToJsonProcessor")
             .process(exchange -> {
                 // Build acknowledgment response back to switch
-                ISOMessage incoming = exchange.getProperty("incomingMsg", ISOMessage.class);
-                int responseMti = incoming.getMti() + 0x0010; // 0200→0210, 0400→0410
-                ISOMessage ack = messageFactory.newMessage(responseMti);
+                IsoMessage incoming = exchange.getProperty("incomingMsg", IsoMessage.class);
+                int responseMti = incoming.getType() + 0x0010; // 0200→0210, 0400→0410
+                IsoMessage ack = messageFactory.newMessage(responseMti);
                 if (incoming.getField(11) != null) {
                     ack.setValue(11, incoming.getField(11).toString(),
                         null, IsoType.NUMERIC, 6);
                 }
-                ack.setValue(39, "00", null, IsoType.ALPHA, 2);
+                ack.setValue(39, "00", IsoType.ALPHA, 2);
                 exchange.getIn().setBody(ack);
             });
     }
@@ -1878,7 +1878,7 @@ package id.redhat.razhari.functional;
 import id.redhat.razhari.codec.ISO8583Decoder;
 import id.redhat.razhari.codec.ISO8583Encoder;
 import id.redhat.razhari.config.MessageFactoryProducer;
-import com.solab.iso8583.ISOMessage;
+import com.solab.iso8583.IsoMessage;
 import com.solab.iso8583.IsoType;
 import com.solab.iso8583.MessageFactory;
 import io.netty.bootstrap.ServerBootstrap;
@@ -1895,7 +1895,7 @@ public class MockISO8583Switch {
     private Channel serverChannel;
     private NioEventLoopGroup bossGroup;
     private NioEventLoopGroup workerGroup;
-    private MessageFactory<ISOMessage> factory;
+    private MessageFactory<IsoMessage> factory;
 
     public MockISO8583Switch(int port) throws IOException {
         this.port = port;
@@ -1905,7 +1905,7 @@ public class MockISO8583Switch {
     public void start() throws InterruptedException {
         bossGroup = new NioEventLoopGroup(1);
         workerGroup = new NioEventLoopGroup();
-        MessageFactory<ISOMessage> f = factory;
+        MessageFactory<IsoMessage> f = factory;
 
         ServerBootstrap bootstrap = new ServerBootstrap()
             .group(bossGroup, workerGroup)
@@ -1915,16 +1915,16 @@ public class MockISO8583Switch {
                 protected void initChannel(SocketChannel ch) {
                     ch.pipeline().addLast(new ISO8583Decoder(f));
                     ch.pipeline().addLast(new ISO8583Encoder());
-                    ch.pipeline().addLast(new SimpleChannelInboundHandler<ISOMessage>() {
+                    ch.pipeline().addLast(new SimpleChannelInboundHandler<IsoMessage>() {
                         @Override
-                        protected void channelRead0(ChannelHandlerContext ctx, ISOMessage msg)
+                        protected void channelRead0(ChannelHandlerContext ctx, IsoMessage msg)
                                 throws Exception {
-                            ISOMessage response = f.newMessage(0x0210);
+                            IsoMessage response = f.newMessage(0x0210);
                             if (msg.getField(11) != null) {
                                 response.setValue(11, msg.getField(11).toString(),
                                     null, IsoType.NUMERIC, 6);
                             }
-                            response.setValue(38, "AUTH01", null, IsoType.ALPHA, 6);
+                            response.setValue(38, "AUTH01", IsoType.ALPHA, 6);
                             response.setValue(39, "00",     null, IsoType.ALPHA, 2);
                             ctx.writeAndFlush(response);
                         }
