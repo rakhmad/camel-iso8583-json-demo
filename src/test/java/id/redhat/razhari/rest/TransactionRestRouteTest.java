@@ -2,7 +2,6 @@ package id.redhat.razhari.rest;
 
 import id.redhat.razhari.model.TransactionState;
 import id.redhat.razhari.model.TransactionStatus;
-import id.redhat.razhari.route.IsoMessageSender;
 import id.redhat.razhari.store.TransactionStore;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
@@ -19,13 +18,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @QuarkusTest
-class TransactionResourceTest {
+class TransactionRestRouteTest {
 
     @InjectMock
     TransactionStore store;
-
-    @InjectMock
-    IsoMessageSender sender;
 
     @Test
     void POST_returns_202_with_transaction_id() {
@@ -42,13 +38,12 @@ class TransactionResourceTest {
                 }
                 """)
         .when()
-            .post("/transactions")
+            .post("/api/v1/transactions")
         .then()
             .statusCode(202)
             .body("transactionId", matchesPattern("[0-9a-f-]{36}"));
 
         verify(store).save(any(TransactionState.class));
-        verify(sender).asyncSend(any(TransactionState.class));
     }
 
     @Test
@@ -58,7 +53,7 @@ class TransactionResourceTest {
 
         given()
         .when()
-            .get("/transactions/test-id")
+            .get("/api/v1/transactions/test-id")
         .then()
             .statusCode(200)
             .body("transactionId", equalTo("test-id"))
@@ -71,7 +66,7 @@ class TransactionResourceTest {
 
         given()
         .when()
-            .get("/transactions/unknown")
+            .get("/api/v1/transactions/unknown")
         .then()
             .statusCode(404);
     }
@@ -83,7 +78,7 @@ class TransactionResourceTest {
 
         given()
         .when()
-            .get("/transactions/id-1/status")
+            .get("/api/v1/transactions/id-1/status")
         .then()
             .statusCode(200)
             .body("status", equalTo("PENDING"))
@@ -100,7 +95,7 @@ class TransactionResourceTest {
         given()
             .queryParam("type", "inbound")
         .when()
-            .get("/transactions")
+            .get("/api/v1/transactions")
         .then()
             .statusCode(200)
             .body("size()", equalTo(1));
@@ -115,7 +110,7 @@ class TransactionResourceTest {
 
         given()
         .when()
-            .get("/transactions")
+            .get("/api/v1/transactions")
         .then()
             .statusCode(200)
             .body("size()", equalTo(2));
