@@ -160,9 +160,10 @@ public class RestApiRoute extends RouteBuilder {
                 BacklogTracer tracer = camelContext.getCamelContextExtension()
                     .getContextPlugin(BacklogTracer.class);
                 List<TraceStep> steps;
-                if (tracer == null) {
+                if (tracer == null || !tracer.isEnabled()) {
                     steps = Collections.emptyList();
                 } else {
+                    tracer.setRemoveOnDump(false);
                     AtomicInteger counter = new AtomicInteger(1);
                     steps = tracer.dumpAllTracedMessages().stream()
                         .filter(m -> m.getMessageAsXml() != null && m.getMessageAsXml().contains(txId))
@@ -215,6 +216,7 @@ public class RestApiRoute extends RouteBuilder {
         r.createdAt     = s.createdAt;
         r.updatedAt     = s.updatedAt;
         r.result        = s.result;
+        r.request       = s.request;
         return r;
     }
 }

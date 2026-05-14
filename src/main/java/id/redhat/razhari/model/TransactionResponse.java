@@ -9,4 +9,5 @@ public class TransactionResponse {
     public Instant createdAt;
     public Instant updatedAt;
     public Map<String, String> result;   // null when PENDING
+    public TransactionRequest request;   // included for UI amount/currency display
 }
