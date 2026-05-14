@@ -19,12 +19,12 @@ import java.util.List;
 public class SeedDataRoute extends RouteBuilder {
 
     @ConfigProperty(name = "seed.delay-ms", defaultValue = "3000")
-    long delayMs;
+    Long delayMs;
 
     @Override
     public void configure() {
         // delay gives Camel routes and the mock switch time to be ready before the first message
-        from("timer:seed?delay=" + delayMs + "&repeatCount=1")
+        from(String.format("timer:seed?delay=%d&repeatCount=1", delayMs))
             .routeId("seed-data")
             .process(exchange -> exchange.getMessage().setBody(List.of(
                 request("0200", "4111111111111111", 10000L, "840", "TERM0001", "COFFEESHOP001"),
