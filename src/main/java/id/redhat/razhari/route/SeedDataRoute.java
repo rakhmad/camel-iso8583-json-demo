@@ -61,8 +61,9 @@ public class SeedDataRoute extends RouteBuilder {
                 state.updatedAt = Instant.now();
                 store.save(state);
                 isoDispatcher.dispatch(state);
+                exchange.getMessage().setBody(req.merchantId);
             })
-            .log("Seed: queued ${body.merchantId}");
+            .log("Seed: queued ${body}");
     }
 
     private TransactionRequest request(String mti, String pan, long amount,
