@@ -1,11 +1,14 @@
 package id.redhat.razhari.route;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import id.redhat.razhari.model.TransactionRequest;
 import io.quarkus.arc.profile.IfBuildProfile;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.direct.DirectConsumerNotAvailableException;
+import org.apache.camel.component.jackson.JacksonDataFormat;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import java.util.List;
 
@@ -18,6 +21,8 @@ import java.util.List;
 @ApplicationScoped
 @IfBuildProfile("dev")
 public class SeedDataRoute extends RouteBuilder {
+
+    @Inject ObjectMapper objectMapper;
 
     @ConfigProperty(name = "seed.delay-ms", defaultValue = "3000")
     Long delayMs;
@@ -39,6 +44,8 @@ public class SeedDataRoute extends RouteBuilder {
                 request("0200", "4111111111111111", 999999L, "840", "TERM0001", "JEWELER001    ")
             )))
             .split(body()).parallelProcessing(false)
+                // marshal to JSON so direct:rest-submit receives the same bytes as a real HTTP POST
+                .marshal(new JacksonDataFormat(objectMapper, TransactionRequest.class))
                 .to("direct:rest-submit");
     }
 
