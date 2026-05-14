@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ISO 8583 Bridge</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; border-bottom: 1px solid #1e293b; }
+    h1 { font-size: 1rem; font-weight: 600; color: #f8fafc; }
+    .live { display: flex; align-items: center; gap: 0.4rem; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; color: #22c55e; }
+    .live.offline { color: #ef4444; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: pulse 1.5s infinite; }
+    .live.offline .dot { animation: none; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    table { width: 100%; border-collapse: collapse; }
+    thead th { text-align: left; padding: 0.5rem 1rem; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: #64748b; border-bottom: 1px solid #1e293b; }
+    tbody td { padding: 0.7rem 1rem; border-bottom: 1px solid #1e293b; font-size: 0.85rem; vertical-align: middle; }
+    tr.tx-row { cursor: pointer; transition: background 0.1s; }
+    tr.tx-row:hover, tr.tx-row.expanded { background: #1e293b; }
+
+    .badge { display: inline-block; padding: 0.15rem 0.45rem; border-radius: 3px; font-size: 0.7rem; font-weight: 700; }
+    .COMPLETED { background: #14532d; color: #86efac; }
+    .PENDING   { background: #713f12; color: #fde68a; }
+    .FAILED    { background: #7f1d1d; color: #fca5a5; }
+    .TIMEOUT   { background: #1e293b; color: #94a3b8; }
+    .RECEIVED  { background: #0c2a4a; color: #93c5fd; }
+
+    tr.trace-row td { padding: 0; background: #0a1628; }
+    .trace-wrap { padding: 0.75rem 1rem 1rem 2.5rem; border-left: 2px solid #1d4ed8; margin-left: 1rem; }
+    .trace-empty { color: #475569; font-size: 0.8rem; font-style: italic; }
+    .step { margin-bottom: 0.8rem; }
+    .step-head { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: baseline; margin-bottom: 0.25rem; font-size: 0.72rem; color: #64748b; }
+    .step-num  { font-weight: 700; color: #60a5fa; }
+    .step-route{ font-weight: 600; color: #a78bfa; }
+    .step-node { color: #34d399; }
+    .step-body { font-family: ui-monospace, monospace; font-size: 0.72rem; background: #1e293b; padding: 0.35rem 0.6rem; border-radius: 4px; color: #94a3b8; word-break: break-all; white-space: pre-wrap; max-height: 8rem; overflow-y: auto; }
+    .step-type { color: #f472b6; font-weight: 600; }
+
+    .id-col  { font-family: ui-monospace, monospace; font-size: 0.78rem; color: #64748b; }
+    .amt-col { font-family: ui-monospace, monospace; }
+    .upd-col { font-size: 0.78rem; color: #475569; }
+    .empty   { text-align: center; padding: 3rem 1rem; color: #475569; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>ISO 8583 Bridge — Live Transactions</h1>
+  <div class="live" id="live"><span class="dot"></span><span>LIVE</span></div>
+</header>
+<div id="app"><div class="empty">Connecting…</div></div>
+
+<script>
+  const BASE = '/api/v1';
+  const POLL = 2000;
+  const SYM  = { '840': '$', '978': '€' };
+
+  let expandedId = null;
+  let traceCache = {};
+  let lastTxs    = [];
+
+  function shortId(id) { return id ? id.slice(0, 8) + '…' : '—'; }
+  function fmtTime(iso) {
+    if (!iso) return '—';
+    try { return new Date(iso).toLocaleTimeString(); } catch { return iso; }
+  }
+  function fmtAmt(tx) {
+    if (!tx.request) return '—';
+    const s = SYM[tx.request.currency] || (tx.request.currency + ' ');
+    return s + (tx.request.amount / 100).toFixed(2);
+  }
+
+  function renderTrace(steps) {
+    if (!steps || !steps.length)
+      return '<div class="trace-empty">No trace data. BacklogTracer requires dev profile (<code>./mvnw quarkus:dev</code>).</div>';
+    return steps.map(s => `
+      <div class="step">
+        <div class="step-head">
+          <span class="step-num">Step ${s.step}</span>
+          <span class="step-route">${s.routeId || '—'}</span>
+          <span class="step-node">${s.node || '—'}</span>
+          <span>${fmtTime(s.timestamp)}</span>
+        </div>
+        <div class="step-body"><span class="step-type">[${s.bodyType}]</span> ${escHtml(s.bodySummary)}</div>
+      </div>`).join('');
+  }
+
+  function escHtml(s) {
+    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function buildRows(txs) {
+    if (!txs.length) return '<div class="empty">No transactions yet. Start the app in dev mode and wait ~4s for seed data.</div>';
+    return '<table><thead><tr><th>ID</th><th>Status</th><th>Amount</th><th>Updated</th></tr></thead><tbody>' +
+      txs.map(tx => {
+        const exp = tx.transactionId === expandedId;
+        let rows = `<tr class="tx-row${exp?' expanded':''}" data-id="${tx.transactionId}">
+          <td class="id-col">${shortId(tx.transactionId)}</td>
+          <td><span class="badge ${tx.status}">${tx.status}</span></td>
+          <td class="amt-col">${fmtAmt(tx)}</td>
+          <td class="upd-col">${fmtTime(tx.updatedAt)}</td>
+        </tr>`;
+        if (exp) {
+          const steps = traceCache[tx.transactionId];
+          rows += `<tr class="trace-row"><td colspan="4">
+            <div class="trace-wrap">${steps ? renderTrace(steps) : '<div class="trace-empty">Loading trace…</div>'}</div>
+          </td></tr>`;
+        }
+        return rows;
+      }).join('') +
+    '</tbody></table>';
+  }
+
+  function render() {
+    document.getElementById('app').innerHTML = buildRows(lastTxs);
+    document.querySelectorAll('.tx-row').forEach(row => {
+      row.addEventListener('click', () => {
+        const id = row.dataset.id;
+        if (expandedId === id) {
+          expandedId = null;
+          render();
+        } else {
+          expandedId = id;
+          if (traceCache[id] !== undefined) {
+            render();
+          } else {
+            render(); // show "Loading…" immediately
+            fetch(`${BASE}/trace/${id}`)
+              .then(r => r.json())
+              .then(steps => { traceCache[id] = steps; render(); })
+              .catch(() => { traceCache[id] = []; render(); });
+          }
+        }
+      });
+    });
+  }
+
+  async function refresh() {
+    try {
+      const r = await fetch(`${BASE}/transactions`);
+      if (!r.ok) throw new Error(r.status);
+      lastTxs = await r.json();
+      document.getElementById('live').className = 'live';
+      render();
+    } catch {
+      document.getElementById('live').className = 'live offline';
+    }
+  }
+
+  refresh();
+  setInterval(refresh, POLL);
+</script>
+</body>
+</html>
