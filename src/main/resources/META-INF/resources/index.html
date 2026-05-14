@@ -68,7 +68,7 @@
   }
   function fmtAmt(tx) {
     if (!tx.request) return '—';
-    const s = SYM[tx.request.currency] || (tx.request.currency + ' ');
+    const s = SYM[tx.request.currency] || (tx.request.currency ? tx.request.currency + ' ' : '');
     return s + (tx.request.amount / 100).toFixed(2);
   }
 
@@ -88,7 +88,7 @@
   }
 
   function escHtml(s) {
-    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
   function buildRows(txs) {
@@ -130,7 +130,7 @@
             fetch(`${BASE}/trace/${id}`)
               .then(r => r.json())
               .then(steps => { traceCache[id] = steps; render(); })
-              .catch(() => { traceCache[id] = []; render(); });
+              .catch(() => { render(); }); // don't cache on error so retry works on next click
           }
         }
       });
