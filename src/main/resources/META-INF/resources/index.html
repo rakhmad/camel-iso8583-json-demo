@@ -79,11 +79,11 @@
       <div class="step">
         <div class="step-head">
           <span class="step-num">Step ${s.step}</span>
-          <span class="step-route">${s.routeId || '—'}</span>
-          <span class="step-node">${s.node || '—'}</span>
-          <span>${fmtTime(s.timestamp)}</span>
+          <span class="step-route">${escHtml(s.routeId) || '—'}</span>
+          <span class="step-node">${escHtml(s.node) || '—'}</span>
+          <span>${escHtml(fmtTime(s.timestamp))}</span>
         </div>
-        <div class="step-body"><span class="step-type">[${s.bodyType}]</span> ${escHtml(s.bodySummary)}</div>
+        <div class="step-body"><span class="step-type">[${escHtml(s.bodyType)}]</span> ${escHtml(s.bodySummary)}</div>
       </div>`).join('');
   }
 
@@ -96,11 +96,11 @@
     return '<table><thead><tr><th>ID</th><th>Status</th><th>Amount</th><th>Updated</th></tr></thead><tbody>' +
       txs.map(tx => {
         const exp = tx.transactionId === expandedId;
-        let rows = `<tr class="tx-row${exp?' expanded':''}" data-id="${tx.transactionId}">
-          <td class="id-col">${shortId(tx.transactionId)}</td>
-          <td><span class="badge ${tx.status}">${tx.status}</span></td>
-          <td class="amt-col">${fmtAmt(tx)}</td>
-          <td class="upd-col">${fmtTime(tx.updatedAt)}</td>
+        let rows = `<tr class="tx-row${exp?' expanded':''}" data-id="${escHtml(tx.transactionId)}">
+          <td class="id-col">${escHtml(shortId(tx.transactionId))}</td>
+          <td><span class="badge ${escHtml(tx.status)}">${escHtml(tx.status)}</span></td>
+          <td class="amt-col">${escHtml(fmtAmt(tx))}</td>
+          <td class="upd-col">${escHtml(fmtTime(tx.updatedAt))}</td>
         </tr>`;
         if (exp) {
           const steps = traceCache[tx.transactionId];
