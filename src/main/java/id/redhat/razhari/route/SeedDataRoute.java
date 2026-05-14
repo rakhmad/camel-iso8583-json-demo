@@ -3,6 +3,7 @@ package id.redhat.razhari.route;
 import id.redhat.razhari.model.TransactionRequest;
 import io.quarkus.arc.profile.IfBuildProfile;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.component.direct.DirectConsumerNotAvailableException;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -23,6 +24,11 @@ public class SeedDataRoute extends RouteBuilder {
 
     @Override
     public void configure() {
+        // Retry if direct:rest-submit consumer isn't registered yet (e.g. during hot reload)
+        onException(DirectConsumerNotAvailableException.class)
+            .maximumRedeliveries(6)
+            .redeliveryDelay(500);
+
         // delay gives Camel routes and the mock switch time to be ready before the first message
         from(String.format("timer:seed?delay=%d&repeatCount=1", delayMs))
             .routeId("seed-data")
