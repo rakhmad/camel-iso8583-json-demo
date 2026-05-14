@@ -9,6 +9,7 @@ public class TransactionState {
     public TransactionStatus status;
     public TransactionRequest request;
     public Map<String, String> result;   // populated from switch response
+    public String errorMessage;          // set by onException handler for debugging
     public Instant createdAt;
     public Instant updatedAt;
 }

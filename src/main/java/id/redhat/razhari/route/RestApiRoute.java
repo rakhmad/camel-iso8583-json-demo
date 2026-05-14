@@ -216,6 +216,7 @@ public class RestApiRoute extends RouteBuilder {
         r.createdAt     = s.createdAt;
         r.updatedAt     = s.updatedAt;
         r.result        = s.result;
+        r.errorMessage  = s.errorMessage;
         r.request       = s.request;
         return r;
     }
