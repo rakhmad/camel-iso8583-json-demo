@@ -29,7 +29,7 @@ Full implementation plan: `docs/superpowers/plans/2026-05-13-camel-iso-json-brid
 ./mvnw test -Dtest=InMemoryTransactionStoreTest
 
 # Single integration test
-./mvnw verify -Dit.test=FullFlowIT
+./mvnw test -Dtest=FullFlowTest
 
 # Package
 ./mvnw package
@@ -99,7 +99,7 @@ src/main/java/id/redhat/razhari/
 ├── config/      MessageFactoryProducer, ISO8583ServerInitializer, ISO8583ClientInitializer
 ├── util/        StanGenerator (atomic 6-digit counter)
 ├── processor/   JsonToIsoProcessor, IsoToJsonProcessor (Camel @Named processors)
-├── route/       ISO8583SendRoute, ISO8583ServerRoute, CleanupRoute
+├── route/       RestApiRoute, ISO8583SendRoute, ISO8583ServerRoute, CleanupRoute, SeedDataRoute (dev only)
 └── rest/        TransactionResource (JAX-RS)
 
 src/main/resources/
@@ -135,7 +135,7 @@ Test overrides live in `src/test/resources/application.properties`.
 
 - **Unit tests** (plain JUnit 5, no Quarkus runtime): `store/`, `codec/`, `util/`, `processor/` packages. Fast, no app startup.
 - **REST tests** (`@QuarkusTest` + `@InjectMock`): `rest/` package. Full Quarkus app, mocked `TransactionStore` and `ProducerTemplate`.
-- **End-to-end** (`@QuarkusIntegrationTest`): `functional/FullFlowIT`. Starts `MockISO8583Switch` (real Netty TCP server) on port 19999, submits transactions, polls until COMPLETED.
+- **End-to-end** (`@QuarkusTest`): `functional/FullFlowTest`. Starts `MockISO8583Switch` (real Netty TCP server) on port 19999, submits transactions, polls until COMPLETED.
 
 Run unit tests before integration tests: `./mvnw test` then `./mvnw verify`.
 

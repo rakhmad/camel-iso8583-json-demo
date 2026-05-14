@@ -12,7 +12,7 @@ import static org.hamcrest.Matchers.*;
 
 @QuarkusTest
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class FullFlowIT {
+class FullFlowTest {
 
     static MockISO8583Switch mockSwitch;
 
