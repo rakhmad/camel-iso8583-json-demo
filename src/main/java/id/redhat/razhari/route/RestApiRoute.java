@@ -41,6 +41,17 @@ public class RestApiRoute extends RouteBuilder {
 
     @Override
     public void configure() {
+        // quarkus.camel.tracer.enabled registers the BacklogTracer plugin but leaves
+        // isEnabled()=false (standby). Enable it explicitly so dumpAllTracedMessages()
+        // captures live exchanges. Safe in non-dev builds — getContextPlugin returns null
+        // there and the block is skipped.
+        BacklogTracer backlogTracer = camelContext.getCamelContextExtension()
+            .getContextPlugin(BacklogTracer.class);
+        if (backlogTracer != null) {
+            backlogTracer.setEnabled(true);
+            backlogTracer.setRemoveOnDump(false);
+        }
+
         restConfiguration()
             .component("platform-http")
             .contextPath("/api/v1")
@@ -163,7 +174,6 @@ public class RestApiRoute extends RouteBuilder {
                 if (tracer == null || !tracer.isEnabled()) {
                     steps = Collections.emptyList();
                 } else {
-                    tracer.setRemoveOnDump(false);
                     AtomicInteger counter = new AtomicInteger(1);
                     steps = tracer.dumpAllTracedMessages().stream()
                         .filter(m -> m.getMessageAsXml() != null && m.getMessageAsXml().contains(txId))
