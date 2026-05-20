@@ -1,0 +1,24 @@
+- routeConfiguration:
+    id: iso8583-server-error-handler
+    onException:
+      - onException:
+          exception:
+            - java.lang.Exception
+          handled:
+            constant: "true"
+          steps:
+            - log:
+                message: "ISO8583 server error: ${exception.message}"
+
+- route:
+    id: iso8583-server
+    routeConfigurationId: iso8583-server-error-handler
+    from:
+      uri: "netty:tcp://0.0.0.0:{{camel.iso8583.server.port}}?serverInitializerFactory=#iso8583ServerInitializer&sync=true&keepAlive=true"
+      steps:
+        - process:
+            ref: stashIncomingProcessor
+        - process:
+            ref: isoToJsonProcessor
+        - process:
+            ref: buildAckProcessor
