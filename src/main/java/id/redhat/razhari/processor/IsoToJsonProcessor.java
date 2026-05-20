@@ -75,10 +75,10 @@ public class IsoToJsonProcessor implements Processor {
         Map<String, String> result = new HashMap<>();
         result.put("mti", String.format("%04x", msg.getType()).toUpperCase());
         // .trim() removes space padding that j8583 adds to ALPHA-type fields
-        if (msg.hasField(11)) result.put("stan",         msg.getField(11).toString().trim());
-        if (msg.hasField(37)) result.put("retrievalRef", msg.getField(37).toString().trim());
-        if (msg.hasField(38)) result.put("authCode",     msg.getField(38).toString().trim());
-        if (msg.hasField(39)) result.put("responseCode", msg.getField(39).toString().trim());
+        if (msg.hasField(11)) { result.put("stan",         msg.getField(11).toString().trim()); }
+        if (msg.hasField(37)) { result.put("retrievalRef", msg.getField(37).toString().trim()); }
+        if (msg.hasField(38)) { result.put("authCode",     msg.getField(38).toString().trim()); }
+        if (msg.hasField(39)) { result.put("responseCode", msg.getField(39).toString().trim()); }
         return result;
     }
 }

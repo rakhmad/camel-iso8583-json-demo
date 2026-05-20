@@ -19,7 +19,7 @@ public class InMemoryTransactionStore implements TransactionStore {
     @Override
     public void save(TransactionState state) {
         byId.put(state.id, state);
-        if (state.stan != null) stanToId.put(state.stan, state.id);
+        if (state.stan != null) { stanToId.put(state.stan, state.id); }
     }
 
     @Override

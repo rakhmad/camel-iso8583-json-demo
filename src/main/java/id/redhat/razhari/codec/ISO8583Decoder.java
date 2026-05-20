@@ -32,9 +32,9 @@ public class ISO8583Decoder extends ByteToMessageDecoder {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
-        if (in.readableBytes() < 2) return;            // wait for length header
+        if (in.readableBytes() < 2) { return; }            // wait for length header
         int length = in.getUnsignedShort(in.readerIndex());
-        if (in.readableBytes() < length + 2) return;  // wait for full frame
+        if (in.readableBytes() < length + 2) { return; }  // wait for full frame
         in.skipBytes(2);
         byte[] bytes = new byte[length];
         in.readBytes(bytes);
