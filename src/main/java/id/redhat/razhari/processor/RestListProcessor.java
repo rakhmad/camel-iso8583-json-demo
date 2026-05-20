@@ -1,5 +1,6 @@
 package id.redhat.razhari.processor;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import id.redhat.razhari.model.TransactionResponse;
 import id.redhat.razhari.model.TransactionState;
 import id.redhat.razhari.model.TransactionStatus;
@@ -20,15 +21,17 @@ public class RestListProcessor implements Processor {
     @Inject
     TransactionStore store;
 
+    @Inject
+    ObjectMapper objectMapper;
+
     @Override
-    public void process(Exchange exchange) {
+    public void process(Exchange exchange) throws Exception {
         String type = exchange.getIn().getHeader("type", String.class);
         List<TransactionState> states = "inbound".equals(type)
             ? store.findByStatus(TransactionStatus.RECEIVED)
             : store.findAll();
-        exchange.getMessage().setBody(
-            states.stream().map(this::toResponse).collect(Collectors.toList())
-        );
+        List<TransactionResponse> responses = states.stream().map(this::toResponse).collect(Collectors.toList());
+        exchange.getMessage().setBody(objectMapper.writeValueAsString(responses));
         exchange.getMessage().setHeader(Exchange.CONTENT_TYPE, "application/json");
     }
 

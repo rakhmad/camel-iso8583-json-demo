@@ -1,5 +1,6 @@
 package id.redhat.razhari.processor;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import id.redhat.razhari.model.TransactionResponse;
 import id.redhat.razhari.model.TransactionState;
 import id.redhat.razhari.store.TransactionStore;
@@ -16,18 +17,24 @@ public class RestGetByIdProcessor implements Processor {
     @Inject
     TransactionStore store;
 
+    @Inject
+    ObjectMapper objectMapper;
+
     @Override
-    public void process(Exchange exchange) {
+    public void process(Exchange exchange) throws Exception {
         String id = exchange.getIn().getHeader("id", String.class);
         boolean found = store.findById(id).map(s -> {
-            exchange.getMessage().setBody(toResponse(s));
+            try {
+                exchange.getMessage().setBody(objectMapper.writeValueAsString(toResponse(s)));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
             exchange.getMessage().setHeader(Exchange.CONTENT_TYPE, "application/json");
             return true;
         }).orElse(false);
         if (!found) {
             exchange.getMessage().setHeader(Exchange.HTTP_RESPONSE_CODE, 404);
             exchange.getMessage().setBody(null);
-            exchange.setProperty("skipMarshal", true);
         }
     }
 
