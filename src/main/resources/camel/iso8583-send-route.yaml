@@ -1,5 +1,20 @@
+- routeConfiguration:
+    id: send-iso8583-error-handler
+    onException:
+      - onException:
+          exception:
+            - java.lang.Exception
+          handled:
+            constant: "true"
+          steps:
+            - process:
+                ref: sendFailedProcessor
+            - log:
+                message: "ISO8583 send failed: ${exception.message}"
+
 - route:
     id: send-iso8583
+    routeConfigurationId: send-iso8583-error-handler
     from:
       uri: "direct:send-iso8583"
       steps:
