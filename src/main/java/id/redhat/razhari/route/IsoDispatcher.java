@@ -3,7 +3,6 @@ package id.redhat.razhari.route;
 import id.redhat.razhari.model.TransactionState;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.apache.camel.Exchange;
 import org.apache.camel.ProducerTemplate;
 
 /**
