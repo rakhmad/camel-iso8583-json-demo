@@ -1,0 +1,9 @@
+- route:
+    id: cleanup
+    from:
+      uri: "timer:cleanup?period={{camel.iso8583.transaction.cleanup-interval-ms}}"
+      steps:
+        - process:
+            ref: cleanupProcessor
+        - log:
+            message: "Cleanup: moved expired PENDING transactions to TIMEOUT"
