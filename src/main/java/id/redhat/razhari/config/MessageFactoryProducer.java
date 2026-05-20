@@ -7,6 +7,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
 @ApplicationScoped
 public class MessageFactoryProducer {
@@ -18,7 +21,15 @@ public class MessageFactoryProducer {
         factory.setUseBinaryMessages(false);
         factory.setCharacterEncoding("UTF-8");
         factory.setAssignDate(true);
-        ConfigParser.configureFromClasspathConfig(factory, "j8583.xml");
+        // Use this class's own ClassLoader rather than Thread.currentThread().getContextClassLoader().
+        // In Quarkus dev mode the factory may be initialized on a Vert.x IO thread whose context
+        // ClassLoader is the JDK system loader and cannot see application resources like j8583.xml.
+        try (InputStream stream = MessageFactoryProducer.class.getResourceAsStream("/j8583.xml")) {
+            if (stream == null) {
+                throw new IOException("j8583.xml not found on classpath");
+            }
+            ConfigParser.configureFromReader(factory, new InputStreamReader(stream, StandardCharsets.UTF_8));
+        }
         return factory;
     }
 }

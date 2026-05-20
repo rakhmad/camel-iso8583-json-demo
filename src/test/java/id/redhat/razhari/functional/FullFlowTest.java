@@ -12,7 +12,7 @@ import static org.hamcrest.Matchers.*;
 
 @QuarkusTest
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class FullFlowIT {
+class FullFlowTest {
 
     static MockISO8583Switch mockSwitch;
 
@@ -44,7 +44,7 @@ class FullFlowIT {
                 }
                 """)
         .when()
-            .post("/transactions")
+            .post("/api/v1/transactions")
         .then()
             .statusCode(202)
             .extract().path("transactionId");
@@ -52,7 +52,7 @@ class FullFlowIT {
         // Poll until COMPLETED (switch responds asynchronously)
         await().atMost(20, TimeUnit.SECONDS).until(() -> {
             String status = given()
-                .get("/transactions/" + transactionId + "/status")
+                .get("/api/v1/transactions/" + transactionId + "/status")
                 .then()
                 .statusCode(200)
                 .extract().path("status");
@@ -62,7 +62,7 @@ class FullFlowIT {
         // Verify full response
         given()
         .when()
-            .get("/transactions/" + transactionId)
+            .get("/api/v1/transactions/" + transactionId)
         .then()
             .statusCode(200)
             .body("status",              equalTo("COMPLETED"))
@@ -76,7 +76,7 @@ class FullFlowIT {
     void returns404ForUnknownTransactionId() {
         given()
         .when()
-            .get("/transactions/does-not-exist")
+            .get("/api/v1/transactions/does-not-exist")
         .then()
             .statusCode(404);
     }

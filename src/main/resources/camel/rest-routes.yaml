@@ -1,0 +1,79 @@
+- restConfiguration:
+    component: platform-http
+    contextPath: /api/v1
+    bindingMode: "off"
+
+- rest:
+    path: /transactions
+    post:
+      - consumes: application/json
+        produces: application/json
+        to: "direct:rest-submit"
+    get:
+      - path: /{id}
+        produces: application/json
+        to: "direct:rest-get-by-id"
+      - path: /{id}/status
+        produces: application/json
+        to: "direct:rest-get-status"
+      - produces: application/json
+        to: "direct:rest-list"
+
+- rest:
+    path: /trace
+    get:
+      - path: /{transactionId}
+        produces: application/json
+        to: "direct:rest-trace"
+
+- route:
+    id: rest-submit
+    from:
+      uri: "direct:rest-submit"
+      steps:
+        - unmarshal:
+            json:
+              unmarshalType: id.redhat.razhari.model.TransactionRequest
+        - process:
+            ref: restSubmitProcessor
+        - marshal:
+            json: {}
+
+- route:
+    id: rest-get-by-id
+    from:
+      uri: "direct:rest-get-by-id"
+      steps:
+        - process:
+            ref: restGetByIdProcessor
+
+- route:
+    id: rest-get-status
+    from:
+      uri: "direct:rest-get-status"
+      steps:
+        - process:
+            ref: restGetStatusProcessor
+        - filter:
+            simple: "${exchangeProperty.skipMarshal} != true"
+            steps:
+              - marshal:
+                  json: {}
+
+- route:
+    id: rest-list
+    from:
+      uri: "direct:rest-list"
+      steps:
+        - process:
+            ref: restListProcessor
+
+- route:
+    id: rest-trace
+    from:
+      uri: "direct:rest-trace"
+      steps:
+        - process:
+            ref: restTraceProcessor
+        - marshal:
+            json: {}
