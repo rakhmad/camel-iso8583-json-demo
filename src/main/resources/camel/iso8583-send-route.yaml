@@ -1,0 +1,13 @@
+- route:
+    id: send-iso8583
+    from:
+      uri: "direct:send-iso8583"
+      steps:
+        - process:
+            ref: stashStateProcessor
+        - process:
+            ref: jsonToIsoProcessor
+        - to:
+            uri: "netty:tcp://{{camel.iso8583.switch.host}}:{{camel.iso8583.switch.port}}?clientInitializerFactory=#iso8583ClientInitializer&sync=true&reuseChannel=true&connectTimeout={{camel.iso8583.netty.connect-timeout}}"
+        - process:
+            ref: isoToJsonProcessor
