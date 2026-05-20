@@ -7,7 +7,10 @@ import com.solab.iso8583.parse.ConfigParser;
 import id.redhat.razhari.codec.ISO8583Decoder;
 import id.redhat.razhari.codec.ISO8583Encoder;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -111,7 +114,7 @@ public class MockSwitch {
     }
 
     private static String mask(String pan) {
-        if (pan == null || pan.length() <= 10) return pan;
+        if (pan == null || pan.length() <= 10) { return pan; }
         return pan.substring(0, 6) + "******" + pan.substring(pan.length() - 4);
     }
 
